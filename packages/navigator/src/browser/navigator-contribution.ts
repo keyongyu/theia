@@ -62,7 +62,7 @@ import {
 import { FileSystemCommands } from '@theia/filesystem/lib/browser/filesystem-frontend-contribution';
 import { NavigatorDiff, NavigatorDiffCommands } from './navigator-diff';
 import { UriSelection } from '@theia/core/lib/common/selection';
-import { DirNode } from '@theia/filesystem/lib/browser';
+import { DirNode, FileNode } from '@theia/filesystem/lib/browser';
 import { FileNavigatorModel } from './navigator-model';
 import { ClipboardService } from '@theia/core/lib/browser/clipboard-service';
 import { SelectionService } from '@theia/core/lib/common/selection-service';
@@ -105,6 +105,11 @@ export namespace FileNavigatorCommands {
     };
     export const COPY_RELATIVE_FILE_PATH: Command = {
         id: 'navigator.copyRelativeFilePath'
+    };
+    export const OPEN: Command = {
+        id: 'navigator.open',
+        category: 'File',
+        label: 'Open'
     };
 }
 
@@ -330,6 +335,29 @@ export class FileNavigatorContribution extends AbstractViewContribution<FileNavi
                 await this.clipboardService.writeText(text);
             }
         }, { multi: true }));
+        registry.registerCommand(FileNavigatorCommands.OPEN, {
+            isEnabled: () => this.getResourceFileNodes().length > 0,
+            isVisible: () => this.getResourceFileNodes().length > 0,
+            execute: () => {
+                this.getResourceFileNodes().forEach(async node => {
+                    const opener = await this.openerService.getOpener(node.uri);
+                    opener.open(node.uri);
+                });
+            }
+        });
+    }
+
+    /**
+     * Get the list of non-directory file nodes.
+     *
+     * @returns the list of non-directory file nodes.
+     */
+    protected getResourceFileNodes(): FileNode[] {
+        const widget = this.tryGetWidget();
+        if (!widget) {
+            return [];
+        }
+        return widget.model.selectedNodes.filter(node => FileNode.is(node) && !node.fileStat.isDirectory) as FileNode[];
     }
 
     protected withWidget<T>(widget: Widget | undefined = this.tryGetWidget(), cb: (navigator: FileNavigatorWidget) => T): T | false {
@@ -348,7 +376,8 @@ export class FileNavigatorContribution extends AbstractViewContribution<FileNavi
         });
 
         registry.registerMenuAction(NavigatorContextMenu.NAVIGATION, {
-            commandId: CommonCommands.OPEN.id
+            commandId: FileNavigatorCommands.OPEN.id,
+            label: 'Open'
         });
         registry.registerSubmenu(NavigatorContextMenu.OPEN_WITH, 'Open With');
         this.openerService.getOpeners().then(openers => {
