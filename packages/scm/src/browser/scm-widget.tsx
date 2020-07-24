@@ -38,16 +38,16 @@ export class ScmWidget extends BaseWidget implements StatefulWidget {
 
     @inject(ScmService) protected readonly scmService: ScmService;
     @inject(ScmCommitWidget) protected readonly commitWidget: ScmCommitWidget;
-    @inject(ScmTreeWidget) protected readonly resourceWidget: ScmTreeWidget;
+    @inject(ScmTreeWidget) protected readonly resourceTreeWidget: ScmTreeWidget;
     @inject(ScmAmendWidget) protected readonly amendWidget: ScmAmendWidget;
     @inject(ScmNoRepositoryWidget) protected readonly noRepositoryWidget: ScmNoRepositoryWidget;
     @inject(ScmPreferences) protected readonly scmPreferences: ScmPreferences;
 
     set viewMode(mode: 'tree' | 'list') {
-        this.resourceWidget.viewMode = mode;
+        this.resourceTreeWidget.viewMode = mode;
     }
     get viewMode(): 'tree' | 'list' {
-        return this.resourceWidget.viewMode;
+        return this.resourceTreeWidget.viewMode;
     }
 
     constructor() {
@@ -71,7 +71,7 @@ export class ScmWidget extends BaseWidget implements StatefulWidget {
         layout.addWidget(this.panel);
 
         this.containerLayout.addWidget(this.commitWidget);
-        this.containerLayout.addWidget(this.resourceWidget);
+        this.containerLayout.addWidget(this.resourceTreeWidget);
         this.containerLayout.addWidget(this.amendWidget);
         this.containerLayout.addWidget(this.noRepositoryWidget);
 
@@ -88,6 +88,14 @@ export class ScmWidget extends BaseWidget implements StatefulWidget {
 
     get containerLayout(): PanelLayout {
         return this.panel.layout as PanelLayout;
+    }
+
+    getScmService(): ScmService {
+        return this.scmService;
+    }
+
+    getResourceTreeWidget(): ScmTreeWidget {
+        return this.resourceTreeWidget;
     }
 
     /**
@@ -114,12 +122,12 @@ export class ScmWidget extends BaseWidget implements StatefulWidget {
             this.toDisposeOnRefresh.push(repository.input.onDidFocus(() => this.focusInput()));
 
             this.commitWidget.show();
-            this.resourceWidget.show();
+            this.resourceTreeWidget.show();
             this.amendWidget.show();
             this.noRepositoryWidget.hide();
         } else {
             this.commitWidget.hide();
-            this.resourceWidget.hide();
+            this.resourceTreeWidget.hide();
             this.amendWidget.hide();
             this.noRepositoryWidget.show();
         }
@@ -131,7 +139,7 @@ export class ScmWidget extends BaseWidget implements StatefulWidget {
 
     protected onUpdateRequest(msg: Message): void {
         MessageLoop.sendMessage(this.commitWidget, msg);
-        MessageLoop.sendMessage(this.resourceWidget, msg);
+        MessageLoop.sendMessage(this.resourceTreeWidget, msg);
         MessageLoop.sendMessage(this.amendWidget, msg);
         MessageLoop.sendMessage(this.noRepositoryWidget, msg);
         super.onUpdateRequest(msg);
@@ -139,7 +147,7 @@ export class ScmWidget extends BaseWidget implements StatefulWidget {
 
     protected onAfterAttach(msg: Message): void {
         this.node.appendChild(this.commitWidget.node);
-        this.node.appendChild(this.resourceWidget.node);
+        this.node.appendChild(this.resourceTreeWidget.node);
         this.node.appendChild(this.amendWidget.node);
         this.node.appendChild(this.noRepositoryWidget.node);
 
@@ -160,7 +168,7 @@ export class ScmWidget extends BaseWidget implements StatefulWidget {
     storeState(): any {
         const state: object = {
             commitState: this.commitWidget.storeState(),
-            changesTreeState: this.resourceWidget.storeState(),
+            changesTreeState: this.resourceTreeWidget.storeState(),
         };
         return state;
     }
@@ -168,7 +176,7 @@ export class ScmWidget extends BaseWidget implements StatefulWidget {
     restoreState(oldState: any): void {
         const { commitState, changesTreeState } = oldState;
         this.commitWidget.restoreState(commitState);
-        this.resourceWidget.restoreState(changesTreeState);
+        this.resourceTreeWidget.restoreState(changesTreeState);
     }
 
 }
