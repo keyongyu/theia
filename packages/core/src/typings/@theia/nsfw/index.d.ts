@@ -14,7 +14,7 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  ********************************************************************************/
 
-declare module 'nsfw' {
+declare module '@theia/nsfw' {
     function nsfw(dir: string, eventHandler: (events: nsfw.ChangeEvent[]) => void, options?: nsfw.Options): Promise<nsfw.NSFW>;
 
     namespace nsfw {
@@ -26,6 +26,7 @@ declare module 'nsfw' {
         export interface Options {
             debounceMS?: number;
             errorCallback?: (error: string) => void;
+            ignorePathRegexArray?: string[],
         }
 
         export interface ChangeEvent {

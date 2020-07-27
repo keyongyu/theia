@@ -15,7 +15,7 @@
  ********************************************************************************/
 
 import * as fs from 'fs';
-import * as nsfw from 'nsfw';
+import * as nsfw from '@theia/nsfw';
 import * as paths from 'path';
 import { IMinimatch, Minimatch } from 'minimatch';
 import { Disposable, DisposableCollection } from '@theia/core/lib/common/disposable';
@@ -110,6 +110,7 @@ export class NsfwFileSystemWatcherServer implements FileSystemWatcherServer {
         if (options.ignored.length > 0) {
             this.debug('Files ignored for watching', options.ignored);
         }
+        const ignoredMinimatch = options.ignored.map(pattern => new Minimatch(pattern, { dot: true }));
 
         let watcher: nsfw.NSFW | undefined = await nsfw(fs.realpathSync(basePath), (events: nsfw.ChangeEvent[]) => {
             for (const event of events) {
@@ -133,6 +134,8 @@ export class NsfwFileSystemWatcherServer implements FileSystemWatcherServer {
                 console.warn(`Failed to watch "${basePath}":`, error);
                 this.unwatchFileChanges(watcherId);
             },
+            // convert the minimatch objects to string regex patterns for @theia/nsfw to use:
+            ignorePathRegexArray: ignoredMinimatch.map(ignored => ignored.makeRe().source),
             ...this.options.nsfwOptions
         });
         await watcher.start();
@@ -156,7 +159,7 @@ export class NsfwFileSystemWatcherServer implements FileSystemWatcherServer {
             }
         }));
         this.watcherOptions.set(watcherId, {
-            ignored: options.ignored.map(pattern => new Minimatch(pattern, { dot: true }))
+            ignored: ignoredMinimatch,
         });
     }
 
