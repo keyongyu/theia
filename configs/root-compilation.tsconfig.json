@@ -135,6 +135,9 @@
     },
     {
       "path": "../packages/vsx-registry/compile.tsconfig.json"
+    },
+    {
+      "path": "../packages/authentication/compile.tsconfig.json"
     }
   ]
 }

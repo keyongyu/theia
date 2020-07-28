@@ -70,6 +70,9 @@
     },
     {
       "path": "../callhierarchy/compile.tsconfig.json"
+    },
+    {
+      "path": "../authentication/compile.tsconfig.json"
     }
   ]
 }

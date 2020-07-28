@@ -143,7 +143,13 @@ import { ConnectionExtImpl } from './connection-ext';
 import { TasksExtImpl } from './tasks/tasks';
 import { DebugExtImpl } from './node/debug/debug';
 import { FileSystemExtImpl } from './file-system';
-import { QuickPick, QuickPickItem } from '@theia/plugin';
+import { AuthenticationExtImpl } from './authentication-ext';
+import {
+    AuthenticationProvider,
+    AuthenticationSession,
+    QuickPick,
+    QuickPickItem
+} from '@theia/plugin';
 import { ScmExtImpl } from './scm';
 import { DecorationProvider, LineChange } from '@theia/plugin';
 import { DecorationsExtImpl } from './decorations';
@@ -164,6 +170,7 @@ export function createAPIFactory(
     webviewExt: WebviewsExtImpl
 ): PluginAPIFactory {
 
+    const authenticationExt = rpc.set(MAIN_RPC_CONTEXT.AUTHENTICATION_EXT, new AuthenticationExtImpl(rpc));
     const commandRegistry = rpc.set(MAIN_RPC_CONTEXT.COMMAND_REGISTRY_EXT, new CommandRegistryImpl(rpc));
     const quickOpenExt = rpc.set(MAIN_RPC_CONTEXT.QUICK_OPEN_EXT, new QuickOpenExtImpl(rpc));
     const dialogsExt = new DialogsExtImpl(rpc);
@@ -185,6 +192,33 @@ export function createAPIFactory(
     rpc.set(MAIN_RPC_CONTEXT.DEBUG_EXT, debugExt);
 
     return function (plugin: InternalPlugin): typeof theia {
+        const authentication: typeof theia.authentication = {
+            get providerIds(): string[] {
+                return [];
+            },
+            get onDidChangeAuthenticationProviders(): theia.Event<theia.AuthenticationProvidersChangeEvent> {
+                return authenticationExt.onDidChangeAuthenticationProviders;
+            },
+            get onDidChangeSessions(): theia.Event<{[providerId: string]: theia.AuthenticationSessionsChangeEvent}> {
+                return authenticationExt.onDidChangeSessions;
+            },
+            getProviderIds(): Thenable<ReadonlyArray<string>> {
+                return authenticationExt.getProviderIds();
+            },
+            hasSessions(providerId: string, scopes: string[]): Thenable<boolean> {
+                return authenticationExt.hasSessions(providerId, scopes);
+            },
+            logout(providerId: string, sessionId: string): Thenable<void> {
+                return authenticationExt.logout(providerId, sessionId);
+            },
+            getSession(providerId: string, scopes: string[], options: (theia.AuthenticationGetSessionOptions & { createIfNone: true })
+                | theia.AuthenticationGetSessionOptions): Promise<theia.AuthenticationSession> {
+                return authenticationExt.getSession(providerId, scopes, options);
+            },
+            registerAuthenticationProvider(provider: AuthenticationProvider): Disposable {
+                return authenticationExt.registerAuthenticationProvider(provider);
+            }
+        };
         const commands: typeof theia.commands = {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             registerCommand(command: theia.CommandDescription | string, handler?: <T>(...args: any[]) => T | Thenable<T | undefined>, thisArg?: any): Disposable {
@@ -790,6 +824,7 @@ export function createAPIFactory(
 
         return <typeof theia>{
             version: require('../../package.json').version,
+            authentication,
             commands,
             comment,
             window,
@@ -802,6 +837,7 @@ export function createAPIFactory(
             tasks,
             scm,
             // Types
+            AuthenticationSession,
             StatusBarAlignment: StatusBarAlignment,
             Disposable: Disposable,
             EventEmitter: Emitter,
